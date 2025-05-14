@@ -1,27 +1,18 @@
 import axios from 'axios';
 
-const BASE_URL = 'https://newsapi.org/v2';
+// Cambia la URL base para usar el proxy de Netlify Functions
+const PROXY_URL = '/.netlify/functions/newsapi';
 
 export const getNews = async (query = 'tecnologia') => {
   try {
-    const today = new Date();
-    const fromDate = new Date(today);
-    fromDate.setDate(today.getDate() - 7);
-
-    const response = await axios.get(`${BASE_URL}/everything`, {
+    const response = await axios.get(PROXY_URL, {
       params: {
-        q: query,
-        from: fromDate.toISOString().split('T')[0],
-        sortBy: 'popularity',
-        pageSize: 20,
-        language: 'es'
-      },
-      headers: {
-        'X-Api-Key': import.meta.env.VITE_NEWS_API_KEY // ✅ Key en headers (seguro)
+        q: query
       }
     });
 
-    return response.data.articles.map(article => ({
+    // Mapea los artículos directamente desde la respuesta del proxy
+    return response.data.map(article => ({
       author: article.author || 'Autor no disponible',
       title: article.title || 'Sin título',
       description: article.description || 'Descripción no disponible',
@@ -30,8 +21,8 @@ export const getNews = async (query = 'tecnologia') => {
       url: article.url
     }));
   } catch (error) {
-    console.error('Error fetching news:', error);
-    throw error;
+    console.error('Error fetching news:', error.response?.data || error.message);
+    throw new Error('No se pudieron cargar las noticias. Intenta nuevamente más tarde.');
   }
 };
 
